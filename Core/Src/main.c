@@ -6,19 +6,19 @@
   ******************************************************************************
   * @attention
   *
-  * <h2><center>© Copyright (c) 2019 STMicroelectronics.
-  * All rights reserved.</center></h2>
+  * Copyright (c) 2025 STMicroelectronics.
+  * All rights reserved.
   *
-  * This software component is licensed by ST under BSD 3-Clause license,
-  * the "License"; You may not use this file except in compliance with the
-  * License. You may obtain a copy of the License at:
-  *                        opensource.org/licenses/BSD-3-Clause
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "cmsis_os.h"
 #include "dma.h"
 #include "spi.h"
 #include "usart.h"
@@ -26,10 +26,15 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include "cJSON.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+// A ESTRUTURA SensorData_t FOI MOVIDA PARA O FICHEIRO main.h
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -40,8 +45,8 @@
 
 #define MIN_CURRENT_MA        4.0f
 #define MAX_CURRENT_MA        20.0f
-#define MIN_VOLTAGE_ADC_MV    100.0f     // conforme CN0336 (0.1V)
-#define MAX_VOLTAGE_ADC_MV    2400.0f    // conforme CN0336 (2.4V)
+#define MIN_VOLTAGE_ADC_MV    100.0f
+#define MAX_VOLTAGE_ADC_MV    2400.0f
 
 #define NUM_SAMPLES           30
 
@@ -49,8 +54,6 @@
 #define AD7091R_CS_Port       ADC_CS_GPIO_Port
 #define AD7091R_CMD_RESET     0xFFFF
 #define AD7091R_CMD_NORMAL    0x0020
-//#define CALIBRATED_RAW_MIN    (uint16_t)325  // Exemplo: leitura do ADC para 4mA
-//#define CALIBRATED_RAW_MAX    (uint16_t)3875 // Exemplo: leitura do ADC para 20mA
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -60,22 +63,34 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-char writeValue[128];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-static void MPU_Config(void);
+void MX_FREERTOS_Init(void);
 /* USER CODE BEGIN PFP */
+void AD7091R_Init(void);
 uint16_t AD7091R_ReadData(void);
 uint16_t get_filtered_reading(void);
 float raw_to_voltage_mV(uint16_t raw_value);
 float voltage_to_current_mA(float voltage_mv);
-void serialPrint(const char* message);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+// Redireciona a saída da printf para a UART3
+#ifdef __GNUC__
+#define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
+#else
+#define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
+#endif
+
+PUTCHAR_PROTOTYPE
+{
+  HAL_UART_Transmit(&huart3, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
+  return ch;
+}
 
 void AD7091R_Init(void)
 {
@@ -83,7 +98,7 @@ void AD7091R_Init(void)
     uint16_t reset_cmd_tx = AD7091R_CMD_RESET;
     HAL_SPI_Transmit(&hspi1, (uint8_t*)&reset_cmd_tx, 2, HAL_MAX_DELAY);
     HAL_GPIO_WritePin(AD7091R_CS_Port, AD7091R_CS_Pin, GPIO_PIN_SET);
-    HAL_Delay(100);
+    HAL_Delay(100); // HAL_Delay é aceitável aqui, pois é antes do RTOS iniciar
 
     HAL_GPIO_WritePin(AD7091R_CS_Port, AD7091R_CS_Pin, GPIO_PIN_RESET);
     uint16_t normal_cmd_tx = AD7091R_CMD_NORMAL;
@@ -96,21 +111,21 @@ uint16_t AD7091R_ReadData(void)
     uint8_t rx_buf[2] = {0};
     uint16_t adc_raw_16bits, adc_value_12bits;
 
-    HAL_Delay(100);
+    osDelay(1); // Pequena pausa com osDelay
 
     HAL_GPIO_WritePin(AD7091R_CS_Port, AD7091R_CS_Pin, GPIO_PIN_RESET);
     if (HAL_SPI_Receive(&hspi1, rx_buf, 2, HAL_MAX_DELAY) != HAL_OK)
     {
         HAL_GPIO_WritePin(AD7091R_CS_Port, AD7091R_CS_Pin, GPIO_PIN_SET);
-        HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);  // LED erro
-        HAL_Delay(100);
+        HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+        osDelay(100);
         HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
-        serialPrint("Erro na comunicacao SPI!\r\n");
+        printf("Erro na comunicacao SPI!\r\n");
         return 0;
     }
     HAL_GPIO_WritePin(AD7091R_CS_Port, AD7091R_CS_Pin, GPIO_PIN_SET);
 
-    HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);  // LED VERDE SUCESSO
+    HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
 
     adc_raw_16bits = (rx_buf[0] << 8) | rx_buf[1];
     adc_value_12bits = (adc_raw_16bits >> 2) & 0x0FFF;
@@ -123,7 +138,7 @@ uint16_t get_filtered_reading(void)
     uint32_t sum = 0;
     for(uint8_t i = 0; i < NUM_SAMPLES; i++) {
         sum += AD7091R_ReadData();
-        HAL_Delay(100);
+        osDelay(10);
     }
     return (uint16_t)(sum / NUM_SAMPLES);
 }
@@ -141,11 +156,6 @@ float voltage_to_current_mA(float voltage_mv)
     return 4.0f + ((voltage_mv - MIN_VOLTAGE_ADC_MV) * (16.0f / (MAX_VOLTAGE_ADC_MV - MIN_VOLTAGE_ADC_MV)));
 }
 
-void serialPrint(const char* message)
-{
-    HAL_UART_Transmit(&huart3, (uint8_t*)message, strlen(message), HAL_MAX_DELAY);
-}
-
 /* USER CODE END 0 */
 
 /**
@@ -154,13 +164,9 @@ void serialPrint(const char* message)
   */
 int main(void)
 {
-
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
-
-  /* MPU Configuration--------------------------------------------------------*/
-  MPU_Config();
 
   /* MCU Configuration--------------------------------------------------------*/
 
@@ -184,33 +190,28 @@ int main(void)
   MX_USART3_UART_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-
+  printf("Inicializando ADC AD7091R...\r\n");
+  AD7091R_Init();
+  printf("Sistema pronto.\r\n");
   /* USER CODE END 2 */
 
+  /* Init scheduler */
+  osKernelInitialize();
+  /* Call init function for freertos objects (in freertos.c) */
+  MX_FREERTOS_Init();
+
+  /* Start scheduler */
+  osKernelStart();
+
+  /* We should never get here as control is now taken by the scheduler */
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    uint16_t raw_value = get_filtered_reading();
-    float voltage_mv = raw_to_voltage_mV(raw_value);
-    float current_ma = voltage_to_current_mA(voltage_mv);
-    float percentage = ((current_ma - MIN_CURRENT_MA) / (MAX_CURRENT_MA - MIN_CURRENT_MA)) * 100.0f;
-
-    sprintf(writeValue, "ADC:%4u | V:%.2fmV | I:%.2fmA | %%:%.1f\r\n", raw_value, voltage_mv, current_ma, percentage);
-    serialPrint(writeValue);
-    serialPrint("---\r\n");
-
-    HAL_Delay(1000);
-
-    HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);  // LED AZUL - Loop ativo
-    HAL_Delay(1000);
-  }
-
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-
-
+  }
   /* USER CODE END 3 */
 }
 
@@ -274,37 +275,8 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+// AS TAREFAS FORAM MOVIDAS PARA O FICHEIRO freertos.c
 /* USER CODE END 4 */
-
- /* MPU Configuration */
-
-void MPU_Config(void)
-{
-  MPU_Region_InitTypeDef MPU_InitStruct = {0};
-
-  /* Disables the MPU */
-  HAL_MPU_Disable();
-
-  /** Initializes and configures the Region and the memory to be protected
-  */
-  MPU_InitStruct.Enable = MPU_REGION_ENABLE;
-  MPU_InitStruct.Number = MPU_REGION_NUMBER0;
-  MPU_InitStruct.BaseAddress = 0x0;
-  MPU_InitStruct.Size = MPU_REGION_SIZE_4GB;
-  MPU_InitStruct.SubRegionDisable = 0x87;
-  MPU_InitStruct.TypeExtField = MPU_TEX_LEVEL0;
-  MPU_InitStruct.AccessPermission = MPU_REGION_NO_ACCESS;
-  MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_DISABLE;
-  MPU_InitStruct.IsShareable = MPU_ACCESS_SHAREABLE;
-  MPU_InitStruct.IsCacheable = MPU_ACCESS_NOT_CACHEABLE;
-  MPU_InitStruct.IsBufferable = MPU_ACCESS_NOT_BUFFERABLE;
-
-  HAL_MPU_ConfigRegion(&MPU_InitStruct);
-  /* Enables the MPU */
-  HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
-
-}
 
 /**
   * @brief  This function is executed in case of error occurrence.
@@ -320,10 +292,11 @@ void Error_Handler(void)
   }
   /* USER CODE END Error_Handler_Debug */
 }
-#ifdef USE_FULL_ASSERT
+
+#ifdef  USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
+  * where the assert_param error has occurred.
   * @param  file: pointer to the source file name
   * @param  line: assert_param error line source number
   * @retval None
@@ -332,7 +305,7 @@ void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
-     tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */

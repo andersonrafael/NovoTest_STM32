@@ -1,0 +1,3 @@
+../Core/Src/freertos.c:92:6:MX_FREERTOS_Init	8	static
+../Core/Src/freertos.c:141:6:StartProducerTask	32	static
+../Core/Src/freertos.c:173:6:StartConsumerTask	48	static
