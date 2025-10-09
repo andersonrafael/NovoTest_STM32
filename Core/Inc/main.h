@@ -3,7 +3,7 @@
   ******************************************************************************
   * @file           : main.h
   * @brief          : Header for main.c file.
-  *                   This file contains the common defines of the application.
+  * This file contains the common defines of the application.
   ******************************************************************************
   * @attention
   *
@@ -31,17 +31,26 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "cmsis_os.h" // Incluído para os tipos do FreeRTOS
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
 
+// <<<<<<<<<<<<<<< CORREÇÃO 1: STRUCT E EXTERN AGORA ESTÃO DENTRO DOS GUARDS >>>>>>>>>>>>>>>
+
+// Estrutura de dados para os dados do sensor
+typedef struct {
+    uint16_t raw_adc;
+    float voltage_mv;
+    float current_ma;
+} SensorData_t;
+
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
-
+extern osMessageQueueId_t sensorDataQueueHandle;
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/
@@ -69,7 +78,8 @@ void Error_Handler(void);
 #define LD2_GPIO_Port GPIOE
 
 /* USER CODE BEGIN Private defines */
-
+#define MIN_CURRENT_MA        4.0f
+#define MAX_CURRENT_MA        20.0f
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
