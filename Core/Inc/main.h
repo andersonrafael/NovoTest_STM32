@@ -66,14 +66,14 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define ADC_CS_Pin GPIO_PIN_4
+#define ADC_CS_GPIO_Port GPIOA
 #define LD1_Pin GPIO_PIN_0
 #define LD1_GPIO_Port GPIOB
 #define LD3_Pin GPIO_PIN_14
 #define LD3_GPIO_Port GPIOB
 #define AD7091R_CONVST_Pin GPIO_PIN_15
 #define AD7091R_CONVST_GPIO_Port GPIOD
-#define ADC_CS_Pin GPIO_PIN_4
-#define ADC_CS_GPIO_Port GPIOA
 #define LD2_Pin GPIO_PIN_1
 #define LD2_GPIO_Port GPIOE
 

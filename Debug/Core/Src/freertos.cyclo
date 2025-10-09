@@ -1,3 +1,4 @@
-../Core/Src/freertos.c:92:6:MX_FREERTOS_Init	1
-../Core/Src/freertos.c:141:6:StartProducerTask	1
-../Core/Src/freertos.c:173:6:StartConsumerTask	6
+../Core/Src/freertos.c:100:6:MX_FREERTOS_Init	1
+../Core/Src/freertos.c:152:6:StartDefaultTask	1
+../Core/Src/freertos.c:170:6:StartProducerTask	1
+../Core/Src/freertos.c:188:6:StartConsumerTask	6

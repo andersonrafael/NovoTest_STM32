@@ -51,6 +51,13 @@
 /* USER CODE BEGIN Variables */
 
 /* USER CODE END Variables */
+/* Definitions for defaultTask */
+osThreadId_t defaultTaskHandle;
+const osThreadAttr_t defaultTask_attributes = {
+  .name = "defaultTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
 /* Definitions for ProducerTask */
 osThreadId_t ProducerTaskHandle;
 const osThreadAttr_t ProducerTask_attributes = {
@@ -79,6 +86,7 @@ extern float raw_to_voltage_mV(uint16_t raw_value);
 extern float voltage_to_current_mA(float voltage_mv);
 /* USER CODE END FunctionPrototypes */
 
+void StartDefaultTask(void *argument);
 void StartProducerTask(void *argument);
 void StartConsumerTask(void *argument);
 
@@ -108,13 +116,16 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the queue(s) */
   /* creation of sensorDataQueue */
-  sensorDataQueueHandle = osMessageQueueNew (10, sizeof(SensorData_t), &sensorDataQueue_attributes);
+  sensorDataQueueHandle = osMessageQueueNew (10, sizeof(uint16_t), &sensorDataQueue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
+  /* creation of defaultTask */
+  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+
   /* creation of ProducerTask */
   ProducerTaskHandle = osThreadNew(StartProducerTask, NULL, &ProducerTask_attributes);
 
@@ -131,6 +142,24 @@ void MX_FREERTOS_Init(void) {
 
 }
 
+/* USER CODE BEGIN Header_StartDefaultTask */
+/**
+  * @brief  Function implementing the defaultTask thread.
+  * @param  argument: Not used
+  * @retval None
+  */
+/* USER CODE END Header_StartDefaultTask */
+void StartDefaultTask(void *argument)
+{
+  /* USER CODE BEGIN StartDefaultTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END StartDefaultTask */
+}
+
 /* USER CODE BEGIN Header_StartProducerTask */
 /**
   * @brief  Função da Tarefa Produtora (Medição).
@@ -140,27 +169,13 @@ void MX_FREERTOS_Init(void) {
 /* USER CODE END Header_StartProducerTask */
 void StartProducerTask(void *argument)
 {
-  /* USER CODE BEGIN 5 */
-  SensorData_t data_to_send;
-
-  // Loop infinito da tarefa
+  /* USER CODE BEGIN StartProducerTask */
+  /* Infinite loop */
   for(;;)
   {
-    // 1. Obter a leitura filtrada do ADC
-    data_to_send.raw_adc = get_filtered_reading();
-
-    // 2. Converter o valor bruto para tensão e depois para corrente
-    data_to_send.voltage_mv = raw_to_voltage_mV(data_to_send.raw_adc);
-    data_to_send.current_ma = voltage_to_current_mA(data_to_send.voltage_mv);
-
-    // 3. Enviar a estrutura de dados completa para a fila
-    osMessageQueuePut(sensorDataQueueHandle, &data_to_send, 0U, osWaitForever);
-
-    // 4. Pausar a tarefa. A frequência de atualização será este delay
-    // somado ao tempo total da medição (NUM_SAMPLES * 10ms).
-    osDelay(1000);
+    osDelay(1);
   }
-  /* USER CODE END 5 */
+  /* USER CODE END StartProducerTask */
 }
 
 /* USER CODE BEGIN Header_StartConsumerTask */
@@ -219,3 +234,9 @@ void StartConsumerTask(void *argument)
   }
   /* USER CODE END StartConsumerTask */
 }
+
+/* Private application code --------------------------------------------------*/
+/* USER CODE BEGIN Application */
+
+/* USER CODE END Application */
+
