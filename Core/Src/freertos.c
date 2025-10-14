@@ -81,6 +81,7 @@ const osMessageQueueAttr_t sensorDataQueue_attributes = {
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
 // As funções da lógica do ADC são externas (estão em main.c)
+
 extern uint16_t get_filtered_reading(void);
 extern float raw_to_voltage_mV(uint16_t raw_value);
 extern float voltage_to_current_mA(float voltage_mv);
@@ -116,7 +117,7 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the queue(s) */
   /* creation of sensorDataQueue */
-  sensorDataQueueHandle = osMessageQueueNew (10, sizeof(uint16_t), &sensorDataQueue_attributes);
+	sensorDataQueueHandle = osMessageQueueNew (10, sizeof(uint16_t), &sensorDataQueue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -170,10 +171,25 @@ void StartDefaultTask(void *argument)
 void StartProducerTask(void *argument)
 {
   /* USER CODE BEGIN StartProducerTask */
+  SensorData_t sensor_data; // Cria uma instância da estrutura
+
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+    // 1. Realiza a leitura filtrada do ADC
+    sensor_data.raw_adc = get_filtered_reading();
+
+    // 2. Converte o valor bruto para tensão
+    sensor_data.voltage_mv = raw_to_voltage_mV(sensor_data.raw_adc);
+
+    // 3. Converte a tensão para corrente
+    sensor_data.current_ma = voltage_to_current_mA(sensor_data.voltage_mv);
+
+    // 4. Envia a estrutura completa para a fila
+    osMessageQueuePut(sensorDataQueueHandle, &sensor_data, 0U, osWaitForever);
+
+    // 5. Aguarda um tempo antes da próxima medição (ex: 1 segundo)
+    osDelay(1000);
   }
   /* USER CODE END StartProducerTask */
 }
