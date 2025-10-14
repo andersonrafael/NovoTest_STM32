@@ -3560,9 +3560,9 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the queue(s) */
   /* creation of sensorDataQueue */
-	sensorDataQueueHandle = osMessageQueueNew (10, sizeof(uint16_t), &sensorDataQueue_attributes);
+	sensorDataQueueHandle = osMessageQueueNew (10, sizeof(SensorData_t), &sensorDataQueue_attributes);
  8001af8:	4a10      	ldr	r2, [pc, #64]	@ (8001b3c <MX_FREERTOS_Init+0x48>)
- 8001afa:	2102      	movs	r1, #2
+ 8001afa:	210c      	movs	r1, #12
  8001afc:	200a      	movs	r0, #10
  8001afe:	f009 fcda 	bl	800b4b6 <osMessageQueueNew>
  8001b02:	4603      	mov	r3, r0
