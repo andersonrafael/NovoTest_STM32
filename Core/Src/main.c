@@ -99,7 +99,7 @@ void AD7091R_Init(void)
     uint16_t reset_cmd_tx = AD7091R_CMD_RESET;
     HAL_SPI_Transmit(&hspi1, (uint8_t*)&reset_cmd_tx, 2, HAL_MAX_DELAY);
     HAL_GPIO_WritePin(AD7091R_CS_Port, AD7091R_CS_Pin, GPIO_PIN_SET);
-    HAL_Delay(100); // HAL_Delay é aceitável aqui, pois é antes do RTOS iniciar
+    HAL_Delay(1000); // HAL_Delay é aceitável aqui, pois é antes do RTOS iniciar
 
     HAL_GPIO_WritePin(AD7091R_CS_Port, AD7091R_CS_Pin, GPIO_PIN_RESET);
     uint16_t normal_cmd_tx = AD7091R_CMD_NORMAL;
@@ -112,7 +112,7 @@ uint16_t AD7091R_ReadData(void)
     uint8_t rx_buf[2] = {0};
     uint16_t adc_raw_16bits, adc_value_12bits;
 
-    osDelay(1); // Pequena pausa com osDelay
+    osDelay(10); // Pequena pausa com osDelay
 
     HAL_GPIO_WritePin(AD7091R_CS_Port, AD7091R_CS_Pin, GPIO_PIN_RESET);
     if (HAL_SPI_Receive(&hspi1, rx_buf, 2, HAL_MAX_DELAY) != HAL_OK)

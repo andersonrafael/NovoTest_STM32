@@ -4097,35 +4097,34 @@ void AD7091R_Init(void)
  8001ebe:	2110      	movs	r1, #16
  8001ec0:	480e      	ldr	r0, [pc, #56]	@ (8001efc <AD7091R_Init+0x64>)
  8001ec2:	f003 fc0d 	bl	80056e0 <HAL_GPIO_WritePin>
-    HAL_Delay(100); // HAL_Delay é aceitável aqui, pois é antes do RTOS iniciar
- 8001ec6:	2064      	movs	r0, #100	@ 0x64
- 8001ec8:	f000 feac 	bl	8002c24 <HAL_Delay>
+    HAL_Delay(1000); // HAL_Delay é aceitável aqui, pois é antes do RTOS iniciar
+ 8001ec6:	f44f 707a 	mov.w	r0, #1000	@ 0x3e8
+ 8001eca:	f000 feab 	bl	8002c24 <HAL_Delay>
 
     HAL_GPIO_WritePin(AD7091R_CS_Port, AD7091R_CS_Pin, GPIO_PIN_RESET);
- 8001ecc:	2200      	movs	r2, #0
- 8001ece:	2110      	movs	r1, #16
- 8001ed0:	480a      	ldr	r0, [pc, #40]	@ (8001efc <AD7091R_Init+0x64>)
- 8001ed2:	f003 fc05 	bl	80056e0 <HAL_GPIO_WritePin>
+ 8001ece:	2200      	movs	r2, #0
+ 8001ed0:	2110      	movs	r1, #16
+ 8001ed2:	480a      	ldr	r0, [pc, #40]	@ (8001efc <AD7091R_Init+0x64>)
+ 8001ed4:	f003 fc04 	bl	80056e0 <HAL_GPIO_WritePin>
     uint16_t normal_cmd_tx = AD7091R_CMD_NORMAL;
- 8001ed6:	2320      	movs	r3, #32
- 8001ed8:	80bb      	strh	r3, [r7, #4]
+ 8001ed8:	2320      	movs	r3, #32
+ 8001eda:	80bb      	strh	r3, [r7, #4]
     HAL_SPI_Transmit(&hspi1, (uint8_t*)&normal_cmd_tx, 2, HAL_MAX_DELAY);
- 8001eda:	1d39      	adds	r1, r7, #4
- 8001edc:	f04f 33ff 	mov.w	r3, #4294967295
- 8001ee0:	2202      	movs	r2, #2
- 8001ee2:	4807      	ldr	r0, [pc, #28]	@ (8001f00 <AD7091R_Init+0x68>)
- 8001ee4:	f006 fbe2 	bl	80086ac <HAL_SPI_Transmit>
+ 8001edc:	1d39      	adds	r1, r7, #4
+ 8001ede:	f04f 33ff 	mov.w	r3, #4294967295
+ 8001ee2:	2202      	movs	r2, #2
+ 8001ee4:	4806      	ldr	r0, [pc, #24]	@ (8001f00 <AD7091R_Init+0x68>)
+ 8001ee6:	f006 fbe1 	bl	80086ac <HAL_SPI_Transmit>
     HAL_GPIO_WritePin(AD7091R_CS_Port, AD7091R_CS_Pin, GPIO_PIN_SET);
- 8001ee8:	2201      	movs	r2, #1
- 8001eea:	2110      	movs	r1, #16
- 8001eec:	4803      	ldr	r0, [pc, #12]	@ (8001efc <AD7091R_Init+0x64>)
- 8001eee:	f003 fbf7 	bl	80056e0 <HAL_GPIO_WritePin>
+ 8001eea:	2201      	movs	r2, #1
+ 8001eec:	2110      	movs	r1, #16
+ 8001eee:	4803      	ldr	r0, [pc, #12]	@ (8001efc <AD7091R_Init+0x64>)
+ 8001ef0:	f003 fbf6 	bl	80056e0 <HAL_GPIO_WritePin>
 }
- 8001ef2:	bf00      	nop
- 8001ef4:	3708      	adds	r7, #8
- 8001ef6:	46bd      	mov	sp, r7
- 8001ef8:	bd80      	pop	{r7, pc}
- 8001efa:	bf00      	nop
+ 8001ef4:	bf00      	nop
+ 8001ef6:	3708      	adds	r7, #8
+ 8001ef8:	46bd      	mov	sp, r7
+ 8001efa:	bd80      	pop	{r7, pc}
  8001efc:	58020000 	.word	0x58020000
  8001f00:	24000214 	.word	0x24000214
 
@@ -4141,8 +4140,8 @@ uint16_t AD7091R_ReadData(void)
  8001f0c:	803b      	strh	r3, [r7, #0]
     uint16_t adc_raw_16bits, adc_value_12bits;
 
-    osDelay(1); // Pequena pausa com osDelay
- 8001f0e:	2001      	movs	r0, #1
+    osDelay(10); // Pequena pausa com osDelay
+ 8001f0e:	200a      	movs	r0, #10
  8001f10:	f009 fab6 	bl	800b480 <osDelay>
 
     HAL_GPIO_WritePin(AD7091R_CS_Port, AD7091R_CS_Pin, GPIO_PIN_RESET);
