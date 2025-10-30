@@ -203,52 +203,7 @@ void StartProducerTask(void *argument)
 /* USER CODE END Header_StartConsumerTask */
 void StartConsumerTask(void *argument)
 {
-  /* USER CODE BEGIN StartConsumerTask */
-  SensorData_t received_data;
-  osStatus_t status;
 
-  // Loop infinito da tarefa
-  for(;;)
-  {
-    // 1. Esperar para receber um item da fila (a tarefa dorme aqui, economizando CPU)
-    status = osMessageQueueGet(sensorDataQueueHandle, &received_data, NULL, osWaitForever);
-
-    if (status == osOK)
-    {
-      // Pisca o LED azul (LD3) para indicar que está a processar e a enviar
-      HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
-
-      // 2. Calcular a percentagem (lógica de apresentação)
-      float percentage = ((received_data.current_ma - MIN_CURRENT_MA) / (MAX_CURRENT_MA - MIN_CURRENT_MA)) * 100.0f;
-      if (percentage < 0.0f) percentage = 0.0f;
-      if (percentage > 100.0f) percentage = 100.0f;
-
-      // 3. Criar o objeto JSON
-      cJSON *root = cJSON_CreateObject();
-      if (root != NULL)
-      {
-        cJSON_AddNumberToObject(root, "raw_adc", received_data.raw_adc);
-        cJSON_AddNumberToObject(root, "voltage_mV", received_data.voltage_mv);
-        cJSON_AddNumberToObject(root, "current_mA", received_data.current_ma);
-        cJSON_AddNumberToObject(root, "percentage", percentage);
-
-        // 4. Converter o objeto JSON para uma string
-        char *json_string = cJSON_Print(root);
-        if (json_string != NULL)
-        {
-          // 5. Enviar a string JSON pela UART3 usando printf
-          printf("%s\r\n", json_string);
-
-          // 6. LIBERAR A MEMÓRIA ALOCADA! (Muito importante)
-          free(json_string);
-        }
-
-        // 7. Liberar a memória do objeto JSON
-        cJSON_Delete(root);
-      }
-    }
-  }
-  /* USER CODE END StartConsumerTask */
 }
 
 /* Private application code --------------------------------------------------*/
